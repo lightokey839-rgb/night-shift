@@ -1,0 +1,34 @@
+@import "tailwindcss";
+
+/* Night Shift is always dark: the city at night, one green screen still on. */
+:root {
+  --night: #070b14;
+  --panel: #0d1422;
+  --line: #1c2638;
+  --ink: #e6ecf5;
+  --muted: #8b97ab;
+  --signal: #3ef08a;
+}
+
+@theme inline {
+  --color-night: var(--night);
+  --color-panel: var(--panel);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-signal: var(--signal);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background:
+    radial-gradient(1200px 600px at 50% -10%, rgba(62, 240, 138, 0.07), transparent 60%),
+    var(--night);
+  color: var(--ink);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
