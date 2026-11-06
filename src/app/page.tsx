@@ -12,6 +12,21 @@ export const dynamic = "force-dynamic";
 
 type BoardRow = Project & { flares: { count: number }[] };
 
+const HOW_IT_WORKS = [
+  {
+    title: "Scout",
+    body: `Paste a vibecoded app you believe in. You get ${FLARES_PER_NIGHT} flares a night, so pick carefully. Each one is signed by your wallet.`,
+  },
+  {
+    title: "Dawn",
+    body: `At ${String(DAWN_HOUR_UTC).padStart(2, "0")}:00 UTC the board locks. The Morning Report ranks what the scouts backed and why.`,
+  },
+  {
+    title: "Decide",
+    body: "Founders wake up to real signal from real wallets and choose what happens next.",
+  },
+];
+
 async function loadBoard(night: string): Promise<{ rows: BoardRow[]; error: string | null }> {
   try {
     const { data, error } = await db()
@@ -74,6 +89,17 @@ export default async function Home() {
           <DawnCountdown dawn={dawn.toISOString()} />
         </div>
       </section>
+
+      <ol className="mb-8 grid gap-3 sm:grid-cols-3">
+        {HOW_IT_WORKS.map((step, i) => (
+          <li key={step.title} className="rounded-2xl border border-line bg-panel/60 p-4">
+            <p className="font-mono text-xs text-signal">
+              {String(i + 1).padStart(2, "0")} · {step.title}
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-muted">{step.body}</p>
+          </li>
+        ))}
+      </ol>
 
       <ScoutForm night={night} />
 

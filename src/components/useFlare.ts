@@ -5,6 +5,9 @@ import { useState } from "react";
 import { useAccount, useSignMessage } from "wagmi";
 import { flareMessage, normalizeUrl } from "@/lib/night";
 
+// Fired on window after a flare is saved, so counters can refresh.
+export const FLARE_LIT_EVENT = "nightshift:flare-lit";
+
 // Signs a flare for `url` on `night` and posts it. Returns a status message.
 export function useFlare(night: string) {
   const router = useRouter();
@@ -30,6 +33,7 @@ export function useFlare(night: string) {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) return { ok: false, message: data.error ?? "Something went wrong." };
       router.refresh();
+      window.dispatchEvent(new Event(FLARE_LIT_EVENT));
       return { ok: true, message: "Flare lit." };
     } catch {
       return { ok: false, message: "Signature cancelled." };
