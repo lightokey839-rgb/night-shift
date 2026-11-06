@@ -1,10 +1,13 @@
-import { createConfig, http } from "wagmi";
+import { createConfig, http, injected } from "wagmi";
 import { base } from "wagmi/chains";
-import { coinbaseWallet, injected } from "wagmi/connectors";
 
+// Browser wallets only. wagmi discovers every installed wallet (MetaMask,
+// Rabby, Coinbase Wallet extension, ...) through EIP-6963, so each shows up
+// by name. The "wagmi/connectors" bundle is avoided on purpose: it pulls in
+// payment SDKs with optional dependencies that break the Next.js build.
 export const wagmiConfig = createConfig({
   chains: [base],
-  connectors: [injected(), coinbaseWallet({ appName: "Night Shift" })],
+  connectors: [injected()],
   transports: { [base.id]: http() },
   ssr: true,
 });

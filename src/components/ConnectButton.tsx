@@ -2,14 +2,11 @@
 
 import { useState } from "react";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
-
-export function shortAddress(address: string) {
-  return `${address.slice(0, 6)}…${address.slice(-4)}`;
-}
+import { shortAddress } from "@/lib/format";
 
 export function ConnectButton() {
   const { address, isConnected } = useAccount();
-  const { connectors, connect, isPending } = useConnect();
+  const { connectors, connect, isPending, error } = useConnect();
   const { disconnect } = useDisconnect();
   const [open, setOpen] = useState(false);
 
@@ -34,6 +31,14 @@ export function ConnectButton() {
       >
         {isPending ? "Connecting…" : "Connect wallet"}
       </button>
+      {error && !open && (
+        <p className="absolute right-0 mt-2 w-56 text-right text-xs text-amber-300">
+          {/* wagmi's error type omits this name, but injected() throws it when no wallet is installed */}
+          {(error.name as string) === "ProviderNotFoundError"
+            ? "No wallet found. Install a browser wallet such as Coinbase Wallet or MetaMask."
+            : "Couldn't connect. Try again."}
+        </p>
+      )}
       {open && (
         <div className="absolute right-0 z-10 mt-2 w-56 rounded-xl border border-line bg-panel p-2 shadow-xl">
           {connectors.map((connector) => (

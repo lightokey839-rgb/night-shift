@@ -1,7 +1,8 @@
-import { ConnectButton, shortAddress } from "@/components/ConnectButton";
+import { ConnectButton } from "@/components/ConnectButton";
 import { DawnCountdown } from "@/components/DawnCountdown";
 import { FlareButton } from "@/components/FlareButton";
 import { ScoutForm } from "@/components/ScoutForm";
+import { shortAddress } from "@/lib/format";
 import { currentNight, DAWN_HOUR_UTC, FLARES_PER_NIGHT, nextDawn } from "@/lib/night";
 import { db, type Project } from "@/lib/supabase";
 

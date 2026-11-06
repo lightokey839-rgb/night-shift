@@ -47,13 +47,26 @@ export async function POST(req: Request) {
     .maybeSingle();
 
   if (!project) {
+    let page;
+    try {
+      page = await fetchPage(normalized.url);
+    } catch (e) {
+      console.error("scout fetch failed", e);
+      return error("Couldn't read that page. Check the link is public and try again.", 422);
+    }
+
+    // If the AI summary is unavailable, fall back to the page's own title and
+    // description so scouting never breaks because of it.
     let summary;
     try {
-      const page = await fetchPage(normalized.url);
       summary = await summarizePage(normalized.url, page);
     } catch (e) {
-      console.error("scout failed", e);
-      return error("Couldn't read that page. Check the link is public and try again.", 422);
+      console.error("scout summary failed, using page metadata", e);
+      summary = {
+        title: (page.title || new URL(normalized.url).hostname).slice(0, 80),
+        summary: (page.description || page.text).slice(0, 280) || "No description yet.",
+        tags: [],
+      };
     }
 
     const inserted = await supabase

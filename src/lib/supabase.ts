@@ -9,7 +9,8 @@ export function db() {
   if (!url || !key) {
     throw new Error("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set");
   }
-  return createClient(url, key, { auth: { persistSession: false } });
+  // Accept the URL with or without a path such as /rest/v1/ copied from the dashboard.
+  return createClient(new URL(url).origin, key, { auth: { persistSession: false } });
 }
 
 export type Project = {
