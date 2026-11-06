@@ -1,9 +1,11 @@
-import { ConnectButton } from "@/components/ConnectButton";
+import Link from "next/link";
 import { DawnCountdown } from "@/components/DawnCountdown";
 import { FlareButton } from "@/components/FlareButton";
 import { ScoutForm } from "@/components/ScoutForm";
+import { SiteHeader } from "@/components/SiteHeader";
 import { shortAddress } from "@/lib/format";
-import { currentNight, DAWN_HOUR_UTC, FLARES_PER_NIGHT, nextDawn } from "@/lib/night";
+import { currentNight, DAWN_HOUR_UTC, FLARES_PER_NIGHT, formatNight, nextDawn } from "@/lib/night";
+import { latestReportNight } from "@/lib/report";
 import { db, type Project } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
@@ -30,17 +32,27 @@ async function loadBoard(night: string): Promise<{ rows: BoardRow[]; error: stri
 export default async function Home() {
   const night = currentNight();
   const dawn = nextDawn();
-  const { rows, error } = await loadBoard(night);
+  const [{ rows, error }, lastReport] = await Promise.all([
+    loadBoard(night),
+    latestReportNight().catch(() => null),
+  ]);
 
   return (
     <div className="mx-auto flex min-h-screen max-w-3xl flex-col px-4 pb-16 sm:px-6">
-      <header className="flex items-center justify-between py-5">
-        <div className="flex items-center gap-2">
-          <span className="font-mono text-lg text-signal">&gt;_</span>
-          <span className="font-semibold tracking-tight">Night Shift</span>
-        </div>
-        <ConnectButton />
-      </header>
+      <SiteHeader />
+
+      {lastReport && (
+        <Link
+          href={`/report/${lastReport}`}
+          className="group mt-2 flex items-center justify-between gap-4 rounded-2xl border border-signal/30 bg-signal/5 px-4 py-3 text-sm hover:border-signal/60"
+        >
+          <span>
+            <span className="font-mono text-xs uppercase tracking-widest text-signal">Morning Report</span>
+            <span className="ml-3 text-muted">{formatNight(lastReport)}</span>
+          </span>
+          <span className="text-signal group-hover:translate-x-0.5">Read →</span>
+        </Link>
+      )}
 
       <section className="pt-8 pb-8 sm:pt-14">
         <p className="font-mono text-xs uppercase tracking-widest text-muted">

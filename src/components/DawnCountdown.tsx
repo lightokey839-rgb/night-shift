@@ -1,8 +1,10 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export function DawnCountdown({ dawn }: { dawn: string }) {
+  const router = useRouter();
   const target = new Date(dawn).getTime();
   const [now, setNow] = useState<number | null>(null);
 
@@ -11,6 +13,13 @@ export function DawnCountdown({ dawn }: { dawn: string }) {
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
+
+  // At dawn, reload the page so the locked board gives way to the new night
+  // and the link to the Morning Report appears.
+  const reachedDawn = now !== null && now >= target;
+  useEffect(() => {
+    if (reachedDawn) router.refresh();
+  }, [reachedDawn, router]);
 
   // Render nothing time-dependent until mounted, to avoid a hydration mismatch.
   if (now === null) return <span className="font-mono">--:--:--</span>;
