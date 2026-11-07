@@ -4,6 +4,7 @@ import { DecisionBadge } from "@/components/DecisionBadge";
 import { FlareButton } from "@/components/FlareButton";
 import { ScoutForm } from "@/components/ScoutForm";
 import { SiteHeader } from "@/components/SiteHeader";
+import { dawnGlow, Skyline } from "@/components/Skyline";
 import { firstClaim, type ClaimRow } from "@/lib/claims";
 import { shortAddress } from "@/lib/format";
 import { currentNight, DAWN_HOUR_UTC, FLARES_PER_NIGHT, formatNight, nextDawn } from "@/lib/night";
@@ -58,6 +59,7 @@ export default async function Home() {
     loadBoard(night),
     latestReportNight().catch(() => null),
   ]);
+  const totalFlares = rows.reduce((n, p) => n + (p.flares[0]?.count ?? 0), 0);
 
   return (
     <div className="mx-auto flex min-h-screen max-w-3xl flex-col px-4 pb-16 sm:px-6">
@@ -90,12 +92,33 @@ export default async function Home() {
           think deserve a shot. At {String(DAWN_HOUR_UTC).padStart(2, "0")}:00 UTC the board locks and
           the best finds go to the Morning Report.
         </p>
-        <div className="mt-6 inline-flex items-center gap-3 rounded-full border border-line bg-panel px-4 py-2 text-sm">
+      </section>
+
+      <figure className="relative mb-8 overflow-hidden rounded-2xl border border-line">
+        <Skyline
+          lit={totalFlares}
+          glow={dawnGlow(dawn.getTime() - Date.now())}
+          label={`City skyline at night with ${totalFlares} lit ${totalFlares === 1 ? "window" : "windows"}, one per flare tonight`}
+        />
+        <div className="absolute left-4 top-4 hidden items-center gap-3 rounded-full border border-line bg-night/80 px-4 py-2 text-sm backdrop-blur sm:inline-flex">
           <span className="h-2 w-2 animate-pulse rounded-full bg-signal" aria-hidden />
           <span className="text-muted">Dawn in</span>
           <DawnCountdown dawn={dawn.toISOString()} />
         </div>
-      </section>
+        <figcaption className="flex items-center justify-between gap-3 border-t border-line bg-panel px-4 py-2 font-mono text-xs text-muted">
+          <span className="whitespace-nowrap">
+            <span className="hidden sm:inline">Every lit window is a flare tonight · </span>
+            <span className="text-signal">
+              <span className="sm:hidden">✦ </span>
+              {totalFlares} lit
+            </span>
+          </span>
+          <span className="flex items-center gap-2 whitespace-nowrap sm:hidden">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-signal" aria-hidden />
+            dawn in <DawnCountdown dawn={dawn.toISOString()} />
+          </span>
+        </figcaption>
+      </figure>
 
       <ol className="mb-8 grid gap-3 sm:grid-cols-3">
         {HOW_IT_WORKS.map((step, i) => (

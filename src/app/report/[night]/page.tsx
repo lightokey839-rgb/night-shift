@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DecisionBadge } from "@/components/DecisionBadge";
 import { SiteHeader } from "@/components/SiteHeader";
+import { Skyline } from "@/components/Skyline";
 import type { Decision } from "@/lib/claims";
 import { db } from "@/lib/supabase";
 import { shortAddress } from "@/lib/format";
@@ -76,6 +77,14 @@ export default async function ReportPage({ params }: Props) {
               {report.headline}
             </h1>
             <p className="mt-5 max-w-2xl text-lg leading-relaxed text-muted">{report.intro}</p>
+
+            <figure className="mt-8 overflow-hidden rounded-2xl border border-line">
+              <Skyline
+                lit={report.entries.reduce((n, e) => n + e.flares, 0)}
+                glow={1}
+                label="The city at dawn, with one lit window for every flare that night"
+              />
+            </figure>
 
             <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 font-mono text-xs uppercase tracking-widest text-muted">
               <span>{report.entries.length} projects</span>

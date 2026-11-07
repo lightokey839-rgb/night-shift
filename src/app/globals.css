@@ -25,6 +25,22 @@ html {
   color-scheme: dark;
 }
 
+/* Lit skyline windows flicker gently, like screens still on. */
+@keyframes skyline-flicker {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.skyline-lit {
+  animation: skyline-flicker 4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skyline-lit {
+    animation: none;
+  }
+}
+
 body {
   background:
     radial-gradient(1200px 600px at 50% -10%, rgba(62, 240, 138, 0.07), transparent 60%),
