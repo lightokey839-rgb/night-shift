@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { DawnCountdown } from "@/components/DawnCountdown";
+import { DecisionBadge } from "@/components/DecisionBadge";
 import { FlareButton } from "@/components/FlareButton";
 import { ScoutForm } from "@/components/ScoutForm";
 import { SiteHeader } from "@/components/SiteHeader";
+import { firstClaim, type ClaimRow } from "@/lib/claims";
 import { shortAddress } from "@/lib/format";
 import { currentNight, DAWN_HOUR_UTC, FLARES_PER_NIGHT, formatNight, nextDawn } from "@/lib/night";
 import { latestReportNight } from "@/lib/report";
@@ -10,7 +12,12 @@ import { db, type Project } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
-type BoardRow = Project & { flares: { count: number }[] };
+type BoardRow = Project & { flares: { count: number }[]; claims: ClaimRow | ClaimRow[] | null };
+
+function decisionOf(row: BoardRow) {
+  const claim = firstClaim(row.claims);
+  return claim?.verified ? claim.decision : null;
+}
 
 const HOW_IT_WORKS = [
   {
@@ -31,7 +38,7 @@ async function loadBoard(night: string): Promise<{ rows: BoardRow[]; error: stri
   try {
     const { data, error } = await db()
       .from("projects")
-      .select("*, flares(count)")
+      .select("*, flares(count), claims(founder_wallet, verified, decision)")
       .eq("night", night)
       .order("created_at", { ascending: true });
     if (error) return { rows: [], error: error.message };
@@ -130,17 +137,22 @@ export default async function Home() {
                 <div className="min-w-0">
                   <div className="flex items-baseline gap-3">
                     <span className="font-mono text-sm text-muted">{String(i + 1).padStart(2, "0")}</span>
+                    <Link href={`/project/${p.id}`} className="truncate text-lg font-semibold hover:text-signal">
+                      {p.title}
+                    </Link>
                     <a
                       href={p.url}
                       target="_blank"
                       rel="noopener noreferrer nofollow"
-                      className="truncate text-lg font-semibold hover:text-signal"
+                      className="shrink-0 text-sm text-muted hover:text-signal"
+                      aria-label={`Open ${p.title}`}
                     >
-                      {p.title}
+                      ↗
                     </a>
                   </div>
                   <p className="mt-2 text-sm leading-relaxed text-muted">{p.summary}</p>
                   <div className="mt-3 flex flex-wrap items-center gap-2">
+                    {decisionOf(p) && <DecisionBadge decision={decisionOf(p)!} />}
                     {p.tags.map((t) => (
                       <span key={t} className="rounded-full bg-white/5 px-2.5 py-0.5 font-mono text-xs text-muted">
                         {t}

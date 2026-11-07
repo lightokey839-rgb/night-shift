@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { DecisionBadge } from "@/components/DecisionBadge";
 import { SiteHeader } from "@/components/SiteHeader";
+import type { Decision } from "@/lib/claims";
+import { db } from "@/lib/supabase";
 import { shortAddress } from "@/lib/format";
 import { currentNight, formatNight, isNightKey, previousNight } from "@/lib/night";
 import { ensureReport } from "@/lib/report";
@@ -9,6 +12,18 @@ import { ensureReport } from "@/lib/report";
 export const dynamic = "force-dynamic";
 
 type Props = { params: Promise<{ night: string }> };
+
+// Founder decisions are live, unlike the locked ranking stored with the report.
+async function loadDecisions(ids: string[]): Promise<Map<string, Decision>> {
+  if (ids.length === 0) return new Map();
+  const { data } = await db()
+    .from("claims")
+    .select("project_id, decision")
+    .in("project_id", ids)
+    .eq("verified", true)
+    .not("decision", "is", null);
+  return new Map((data ?? []).map((c) => [c.project_id as string, c.decision as Decision]));
+}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { night } = await params;
@@ -24,6 +39,7 @@ export default async function ReportPage({ params }: Props) {
   const stillOpen = night >= tonight;
   const report = stillOpen ? null : await ensureReport(night);
   const earlier = previousNight(night);
+  const decisions = report ? await loadDecisions(report.entries.map((e) => e.id)) : new Map<string, Decision>();
 
   return (
     <div className="mx-auto flex min-h-screen max-w-3xl flex-col px-4 pb-16 sm:px-6">
@@ -79,18 +95,25 @@ export default async function ReportPage({ params }: Props) {
                         <span className={`font-mono text-sm ${i === 0 ? "text-signal" : "text-muted"}`}>
                           {String(i + 1).padStart(2, "0")}
                         </span>
+                        <Link href={`/project/${e.id}`} className="truncate text-lg font-semibold hover:text-signal">
+                          {e.title}
+                        </Link>
                         <a
                           href={e.url}
                           target="_blank"
                           rel="noopener noreferrer nofollow"
-                          className="truncate text-lg font-semibold hover:text-signal"
+                          className="shrink-0 text-sm text-muted hover:text-signal"
+                          aria-label={`Open ${e.title}`}
                         >
-                          {e.title}
+                          ↗
                         </a>
                       </div>
                       {e.why && <p className="mt-2 leading-relaxed text-ink">{e.why}</p>}
                       <p className="mt-2 text-sm leading-relaxed text-muted">{e.summary}</p>
-                      <p className="mt-3 font-mono text-xs text-muted/70">scouted by {shortAddress(e.scout_wallet)}</p>
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                        {decisions.get(e.id) && <DecisionBadge decision={decisions.get(e.id)!} />}
+                        <span className="font-mono text-xs text-muted/70">scouted by {shortAddress(e.scout_wallet)}</span>
+                      </div>
                     </div>
                     <span className="flex shrink-0 items-center gap-2 rounded-full border border-line px-3 py-1.5 font-mono text-sm text-signal">
                       <span aria-hidden>✦</span>

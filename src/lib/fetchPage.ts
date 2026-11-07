@@ -41,7 +41,9 @@ async function assertPublicHost(url: URL) {
 
 export type PageInfo = { title: string; description: string; text: string };
 
-export async function fetchPage(input: string): Promise<PageInfo> {
+// Raw HTML of a public page, following up to MAX_REDIRECTS redirects and
+// re-checking each hop against private addresses.
+export async function fetchHtml(input: string): Promise<string> {
   let url = new URL(input);
   let res: Response | null = null;
 
@@ -75,7 +77,11 @@ export async function fetchPage(input: string): Promise<PageInfo> {
       break;
     }
   }
-  const html = new TextDecoder().decode(Buffer.concat(chunks));
+  return new TextDecoder().decode(Buffer.concat(chunks));
+}
+
+export async function fetchPage(input: string): Promise<PageInfo> {
+  const html = await fetchHtml(input);
 
   const pick = (re: RegExp) => decode(html.match(re)?.[1]?.trim() ?? "");
   const title =
