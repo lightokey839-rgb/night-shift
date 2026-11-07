@@ -156,8 +156,10 @@ export default async function Home() {
         </ol>
       </section>
 
-      <footer className="mt-auto pt-16 text-center font-mono text-xs text-muted/70">
-        Built for Vibeathon 02 · Night shift
+      <footer className="mt-auto flex flex-wrap justify-center gap-x-4 gap-y-2 pt-16 text-center font-mono text-xs text-muted/70">
+        <span>Built for Vibeathon 02 · Night shift</span>
+        <Link href="/about" className="hover:text-ink">How it&apos;s built</Link>
+        <Link href="/pitch" className="hover:text-ink">Pitch</Link>
       </footer>
     </div>
   );

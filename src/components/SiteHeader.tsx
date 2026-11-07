@@ -16,6 +16,12 @@ export function SiteHeader() {
         <Link href="/demo" className="text-sm text-muted hover:text-ink">
           Demo
         </Link>
+        <Link href="/about" className="hidden text-sm text-muted hover:text-ink md:inline">
+          How it&apos;s built
+        </Link>
+        <Link href="/pitch" className="hidden text-sm text-muted hover:text-ink md:inline">
+          Pitch
+        </Link>
         <FlaresLeft />
         <ConnectButton />
       </nav>

@@ -19,14 +19,23 @@ accountable: three signed picks per wallet per night, a hard deadline, and a pub
 of who backed what before it was obvious. Founders get a clear signal from real wallets
 and a short list of next moves, including a path to raise on Vibestarter.
 
-## What works today (on `master`)
+## What works today
 
-- **Scout.** Connect a browser wallet on Base and paste a project URL. You sign a
-  plain-text message (no gas, no transaction). The server verifies the signature, fetches
-  the page (with SSRF guards), and Claude Haiku writes a two-sentence summary and three tags.
-  If the AI call fails, the card falls back to the page's own title and description.
-- **Flare.** Back projects already on tonight's board. 3 flares per wallet per night,
-  enforced by the API and by a Postgres trigger. One flare per wallet per project.
+- **Scout.** Connect a browser wallet on Base, paste an indie app's https URL, pick what it
+  was built with, and write why it deserves a shot (max 140 characters). You sign a
+  plain-text message carrying the site's domain, a one-time nonce and a 10-minute expiry
+  (no gas, no transaction). The server verifies it, rate-limits per wallet and IP, refuses
+  big platforms, and fetches the page (https only, 5 s, 1 MB, private networks blocked on
+  every redirect).
+- **Overnight analyst.** Cheap site checks (loads, HTTPS, viewport, title, OG image, lang,
+  alt text) plus one Claude Haiku call return a summary, up to 3 strengths and risks, and a
+  launch-readiness score (0-100), cached per project. It runs on submission and again at
+  dawn; on failure the UI says "analysis pending".
+- **Flare.** Back projects on tonight's board with a signed note. 3 flares per wallet per
+  night is a database constraint (unique slot 1-3). Flaring the same project twice is a no-op.
+- **Demo edition** (`/demo`). No wallet needed: guests flare seeded demo apps, then
+  "Run dawn now" locks the run and publishes its Morning Report in a few seconds. Demo data
+  is flagged `is_demo`, badged "Demo", and never counted as real activity.
 - **Tonight's board.** Ranked by flares, with a live countdown to dawn and a skyline where
   every flare lights a window. The sky warms as dawn approaches.
 - **Dawn lock and Morning Report** (`/report`, `/report/[night]`). When a night closes, its
@@ -50,11 +59,14 @@ Browser (wagmi, injected wallets)
 Next.js 15 App Router on Vercel
    ├─ Server components: /, /project/[id], /report/[night], /scout/[wallet]
    ├─ API routes
-   │    POST /api/flare               scout or flare a project
+   │    POST /api/flare               scout or flare a project (signed, with a note)
    │    GET  /api/flares?wallet=      flares used tonight
    │    GET  /api/flares/[id]/verify  re-verify a stored signature
    │    POST /api/claim               claim → verify → decide
-   │    GET  /api/dawn                cron: publish last night's report (CRON_SECRET)
+   │    GET  /api/dawn                cron + manual trigger: analyse top picks, publish (CRON_SECRET)
+   │    POST /api/demo/flare          guest flare in the demo edition
+   │    POST /api/demo/dawn           "Run dawn now" (30 s cooldown)
+   │    POST /api/demo/analyze        owner: run the analyst on demo apps (CRON_SECRET)
    ├─ viem publicClient on Base       verifyMessage (EOA + ERC-1271/6492 smart wallets)
    ├─ @anthropic-ai/sdk               claude-haiku-5-5, structured output via zod
    └─ Supabase (service role, server only)
@@ -67,33 +79,44 @@ flag; a night is locked once it is earlier than the current night, so the API si
 accepting signatures for it.
 
 **Signatures.** The client and server build the same message from shared code
-(`flareMessage` in `src/lib/night.ts`, `claimMessage` in `src/lib/claims.ts`). The server
-rebuilds it from the request, verifies it on Base, and stores the message and signature with
-the flare so anyone can check it later.
+(`src/lib/signing.ts`, with the action's fields from `flareFields` / `claimFields`). The
+server rebuilds it from the request, checks domain and expiry, verifies it on Base, burns the
+nonce in `used_nonces`, and stores the message and signature with the flare so anyone can
+check it later.
 
-**Database** (`supabase/schema.sql`). Row level security is on with no public policies;
+**Database** (`supabase/schema.sql`, then `supabase/migrations/002_tracks_abc.sql`). Row level security is on with no public policies;
 every read and write goes through server code using the service role key, which is
 `server-only` and never reaches the browser.
 
 | Table | Purpose |
 | --- | --- |
 | `projects` | One card per URL per night (`unique (url_key, night)`), with summary and tags |
-| `flares` | Signed backing; `unique (project_id, wallet)`, 3-per-night trigger |
+| `flares` | Signed backing with a note; `unique (project_id, wallet)`, `unique (wallet, night, slot)` with slot 1-3 |
 | `claims` | Founder wallet, verify code, verified flag, decision |
 | `reports` | Stored Morning Reports (ranking JSON + write-up), first writer wins |
+| `project_analysis` | Cached analyst output: checks, summary, strengths, risks, readiness |
+| `used_nonces` | One row per signed message; replays hit the primary key |
+| `demo_state` | The open demo run |
 | `pledges` | Schema only. Not used by the app yet |
+
+Demo rows (`is_demo = true`) live in the same tables and are filtered out of every real
+board, report, counter and scout record. Guests are `guest:<id>` and can only flare demo rows
+(a check constraint).
 
 **Key files**
 
 | Path | What it does |
 | --- | --- |
-| `src/lib/night.ts` | Dawn maths, night keys, flare message, URL normalising |
-| `src/lib/fetchPage.ts` | Public-page fetcher: blocks private IPs, re-checks each redirect, 512 KB cap, 8 s timeout |
-| `src/lib/summarize.ts` | Project card summary with Claude Haiku |
-| `src/lib/report.ts` | Ranking, Morning Report write-up and storage |
+| `src/lib/night.ts` | Dawn maths, night keys, flare fields |
+| `src/lib/signing.ts` | Signed-message envelope: domain, nonce, expiry |
+| `src/lib/submissions.ts` | https-only URL normalising, blocklist, built-with, notes |
+| `src/lib/fetchPage.ts` | Public-page fetcher: private IPs blocked per redirect, 5 s, 1 MB, site checks |
+| `src/lib/analyst.ts` | Overnight analyst (Claude Haiku) and its cache |
+| `src/lib/report.ts` | Ranking, Morning Report write-up and storage, dawn job |
+| `src/lib/demo.ts` | Demo runs, guest identity, "Run dawn now" rotation |
 | `src/lib/scouts.ts` | Scout record and hit rate |
-| `src/lib/verify.ts` | Signature verification on Base |
-| `src/lib/claims.ts` | Decisions, claim messages, verify snippet |
+| `src/lib/verify.ts` | Signature, domain, expiry and nonce checks on Base; IP hashing |
+| `src/lib/claims.ts` | Decisions, claim fields, verify snippet |
 
 ## Run it locally
 
@@ -101,7 +124,8 @@ Requirements: Node 20+, a free Supabase project, an Anthropic API key, and a bro
 (MetaMask, Rabby, Coinbase Wallet extension, …) to sign.
 
 1. **Database.** In Supabase, open **SQL Editor → New query**, paste `supabase/schema.sql`
-   and run it. Note the project URL and the `service_role` key from **Project Settings → API**.
+   and run it, then do the same with `supabase/migrations/002_tracks_abc.sql`. Note the
+   project URL and the `service_role` key from **Project Settings → API**.
 2. **Environment.** Copy `.env.example` to `.env.local` and fill it in (see below).
    `.env.local` is git-ignored. Never commit it and never paste these keys into a chat; if one
    leaks, rotate it straight away.
@@ -119,6 +143,13 @@ Requirements: Node 20+, a free Supabase project, an Anthropic API key, and a bro
    so the previous night locks and its Morning Report can be generated. This only works when
    `NODE_ENV` is `development`.
 
+5. **Seed the demo edition.** Fill `data/seed.json` with real vibecoded apps you have
+   permission to feature (`url`, `title`, `built_with`, `note`), then run `npm run seed:demo`.
+   With `SITE_URL` and `CRON_SECRET` set it also runs the analyst on them.
+6. **Smoke test.** With `npm run dev` running, `npm run test:smoke` walks the whole loop
+   (submit, validation, replay, limits, dawn, report, demo) on a 2030 test night using the
+   dev-only clock at `/api/dev/clock`, then deletes what it created.
+
 Before deploying, `npm run build` runs the type check and lint.
 
 ## Environment variables
@@ -131,9 +162,9 @@ Before deploying, `npm run build` runs the type check and lint.
 | `BASE_RPC_URL` | no | Base RPC for signature checks. Defaults to the public endpoint |
 | `NEXT_PUBLIC_DAWN_HOUR_UTC` | no | Hour the board locks, default `6`. Keep the cron in `vercel.json` in step |
 | `CRON_SECRET` | prod | Vercel sends it as `Authorization: Bearer …` to `/api/dawn`. Without it the route returns 401 |
+| `NEXT_PUBLIC_VIBESTARTER_APPLY_URL` | no | Where "Raise on Vibestarter" links. Hidden when unset |
+| `IP_HASH_SALT` | no | Salt for the hashed IPs used in rate limits |
 | `DEV_FAKE_NOW` | no | Development only. ISO time that replaces the server clock |
-
-`CRON_SECRET` and `DEV_FAKE_NOW` are not in `.env.example` yet; add them by hand.
 
 ## Deploy
 
@@ -147,9 +178,11 @@ Before deploying, `npm run build` runs the type check and lint.
 - **Wallet signatures, not accounts.** No sign-up and no gas, and every flare is publicly
   verifiable. The cost: one wallet is one scout, so a person with many wallets gets many
   flares. There is no Sybil resistance yet beyond the per-wallet cap.
-- **Signed messages have no nonce or expiry on `master`.** A flare message is bound to the
-  project, night and wallet, and the database refuses duplicates, so replays can't add
-  flares. Claim messages are bound to the action, project and wallet only.
+- **Client-made nonces.** The browser picks the nonce and expiry; the server enforces the
+  domain, a 10-minute window and single use. A server-issued nonce would need an extra round
+  trip for the same protection.
+- **Guests only in the demo.** The demo lets anyone try the full loop without a wallet, but
+  guest flares are unsigned, so they are confined to demo data by a database constraint.
 - **Locking by clock, not by a job.** The board locks because the night key moves on, so
   nothing has to run on time. The cron only pre-warms the AI write-up; a missed run delays
   it until the first visitor.
@@ -167,17 +200,9 @@ Before deploying, `npm run build` runs the type check and lint.
 
 ## Next steps
 
-In progress on a separate branch (not on `master` yet):
-
-- A demo edition with guest flares and a "Run dawn now" button, so judges can try the full loop.
-- Scout notes (140 characters) on each flare.
-- A "built with" field on projects.
-- Nonce, expiry and domain in signed messages.
-- An AI analyst on each project: strengths, risks and a launch-readiness score (0-100).
-- Open Graph images and a share button.
-
-Later:
-
+- The tower board: each project a window, rain, the roof sign lighting at dawn.
+- Scout reputation as a ranking tiebreaker (consensus hits from earlier nights).
+- A read-only $VIBES balance badge on scout pages.
 - Pledges (the table exists; no UI or API yet).
 - Sybil resistance, for example weighting flares by wallet history or holdings.
 - Notifications for founders when their project is scouted or makes the Morning Report.
