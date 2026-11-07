@@ -1,6 +1,6 @@
 # Night Shift
 
-**Scouts find them overnight. Founders decide at dawn.**
+**Scouts back indie apps overnight. Founders decide at dawn.**
 
 Night Shift is a community discovery board for vibecoded apps. Every wallet gets 3
 **flares** a night to spend on projects it believes in. At 06:00 UTC the board locks and

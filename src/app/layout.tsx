@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Night Shift",
-  description: "Scouts find promising vibecoded apps overnight. Founders decide at dawn.",
+  description: "Scouts back indie apps overnight. Founders decide at dawn.",
 };
 
 export default function RootLayout({

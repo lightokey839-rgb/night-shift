@@ -57,7 +57,7 @@ export default async function Home() {
           Night of {night} · board locks at dawn
         </p>
         <h1 className="mt-3 text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
-          Scouts find them overnight.
+          Scouts back indie apps overnight.
           <br />
           <span className="text-muted">Founders decide at dawn.</span>
         </h1>
