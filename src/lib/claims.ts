@@ -14,8 +14,9 @@ export function isDecision(value: unknown): value is Decision {
 
 export type ClaimAction = "claim" | "verify" | `decide:${Decision}`;
 
-export function claimMessage(action: ClaimAction, projectId: string, wallet: string): string {
-  return [`Night Shift · ${action}`, `Project: ${projectId}`, `Wallet: ${wallet.toLowerCase()}`].join("\n");
+// The action-specific lines of a signed claim step (see signing.ts for the rest).
+export function claimFields(projectId: string): [string, string][] {
+  return [["Project", projectId]];
 }
 
 // The snippet a founder adds to their site to prove they control it.
@@ -23,7 +24,8 @@ export function verifySnippet(code: string): string {
   return `<meta name="night-shift-verify" content="${code}">`;
 }
 
-export const VIBESTARTER_URL = "https://app.vibestarter.xyz";
+// Where "Raise on Vibestarter" links. Hidden when unset.
+export const VIBESTARTER_APPLY_URL = process.env.NEXT_PUBLIC_VIBESTARTER_APPLY_URL || null;
 
 // Claims come back from a Supabase join as an object or a one-item array.
 export type ClaimRow = { founder_wallet: string; verified: boolean; decision: Decision | null };

@@ -13,6 +13,9 @@ export function SiteHeader() {
         <Link href="/report" className="hidden text-sm text-muted hover:text-ink sm:inline">
           Morning Report
         </Link>
+        <Link href="/demo" className="text-sm text-muted hover:text-ink">
+          Demo
+        </Link>
         <FlaresLeft />
         <ConnectButton />
       </nav>

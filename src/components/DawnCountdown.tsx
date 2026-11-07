@@ -22,7 +22,7 @@ export function DawnCountdown({ dawn }: { dawn: string }) {
   }, [reachedDawn, router]);
 
   // Render nothing time-dependent until mounted, to avoid a hydration mismatch.
-  if (now === null) return <span className="font-mono">--:--:--</span>;
+  if (now === null) return <span className="font-mono tabular-nums">--:--:--</span>;
 
   const left = Math.max(0, target - now);
   const h = Math.floor(left / 3_600_000);

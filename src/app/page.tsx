@@ -1,65 +1,39 @@
 import Link from "next/link";
+import { BoardCard } from "@/components/BoardCard";
 import { DawnCountdown } from "@/components/DawnCountdown";
-import { DecisionBadge } from "@/components/DecisionBadge";
 import { FlareButton } from "@/components/FlareButton";
 import { ScoutForm } from "@/components/ScoutForm";
 import { SiteHeader } from "@/components/SiteHeader";
 import { dawnGlow, Skyline } from "@/components/Skyline";
-import { firstClaim, type ClaimRow } from "@/lib/claims";
-import { shortAddress } from "@/lib/format";
+import { loadBoard } from "@/lib/board";
 import { currentNight, DAWN_HOUR_UTC, FLARES_PER_NIGHT, formatNight, nextDawn } from "@/lib/night";
 import { latestReportNight } from "@/lib/report";
-import { db, type Project } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
-
-type BoardRow = Project & { flares: { count: number }[]; claims: ClaimRow | ClaimRow[] | null };
-
-function decisionOf(row: BoardRow) {
-  const claim = firstClaim(row.claims);
-  return claim?.verified ? claim.decision : null;
-}
 
 const HOW_IT_WORKS = [
   {
     title: "Scout",
-    body: `Paste a vibecoded app you believe in. You get ${FLARES_PER_NIGHT} flares a night, so pick carefully. Each one is signed by your wallet.`,
+    body: `Paste an indie vibecoded app and say why it deserves a shot. You get ${FLARES_PER_NIGHT} flares a night, each signed by your wallet.`,
   },
   {
     title: "Dawn",
-    body: `At ${String(DAWN_HOUR_UTC).padStart(2, "0")}:00 UTC the board locks. The Morning Report ranks what the scouts backed and why.`,
+    body: `At ${String(DAWN_HOUR_UTC).padStart(2, "0")}:00 UTC the board locks. The Morning Report ranks what scouts backed, in their own words.`,
   },
   {
     title: "Decide",
-    body: "Founders wake up to real signal from real wallets and choose what happens next.",
+    body: "Founders claim their app, read the signal, and choose: raise, keep building, or find testers.",
   },
 ];
-
-async function loadBoard(night: string): Promise<{ rows: BoardRow[]; error: string | null }> {
-  try {
-    const { data, error } = await db()
-      .from("projects")
-      .select("*, flares(count), claims(founder_wallet, verified, decision)")
-      .eq("night", night)
-      .order("created_at", { ascending: true });
-    if (error) return { rows: [], error: error.message };
-    const rows = (data as BoardRow[]).sort(
-      (a, b) => (b.flares[0]?.count ?? 0) - (a.flares[0]?.count ?? 0),
-    );
-    return { rows, error: null };
-  } catch (e) {
-    return { rows: [], error: e instanceof Error ? e.message : "Database unavailable" };
-  }
-}
 
 export default async function Home() {
   const night = currentNight();
   const dawn = nextDawn();
-  const [{ rows, error }, lastReport] = await Promise.all([
+  const [{ items, error }, lastReport] = await Promise.all([
     loadBoard(night),
     latestReportNight().catch(() => null),
   ]);
-  const totalFlares = rows.reduce((n, p) => n + (p.flares[0]?.count ?? 0), 0);
+  const totalFlares = items.reduce((n, p) => n + p.flareCount, 0);
 
   return (
     <div className="mx-auto flex min-h-screen max-w-3xl flex-col px-4 pb-16 sm:px-6">
@@ -88,9 +62,9 @@ export default async function Home() {
           <span className="text-muted">Founders decide at dawn.</span>
         </h1>
         <p className="mt-4 max-w-xl text-muted">
-          Every scout gets {FLARES_PER_NIGHT} flares a night. Spend them on the vibecoded apps you
-          think deserve a shot. At {String(DAWN_HOUR_UTC).padStart(2, "0")}:00 UTC the board locks and
-          the best finds go to the Morning Report.
+          A night shift for discovering indie vibecoded apps: scouts back the ones they believe in with signed
+          flares and a reason, and founders wake up to real signal on whether to raise, keep building, or find
+          testers.
         </p>
       </section>
 
@@ -131,64 +105,53 @@ export default async function Home() {
         ))}
       </ol>
 
+      <Link
+        href="/demo"
+        className="group mb-8 flex items-center justify-between gap-4 rounded-2xl border border-amber-300/30 bg-amber-300/5 px-4 py-3 text-sm hover:border-amber-300/60"
+      >
+        <span>
+          <span className="font-mono text-xs uppercase tracking-widest text-amber-200">No wallet?</span>
+          <span className="ml-3 text-muted">Try the demo edition: flare as a guest and run dawn now.</span>
+        </span>
+        <span className="text-amber-200 group-hover:translate-x-0.5">→</span>
+      </Link>
+
       <ScoutForm night={night} />
 
       <section className="mt-10">
         <div className="mb-3 flex items-baseline justify-between">
           <h2 className="font-mono text-xs uppercase tracking-widest text-muted">Tonight&apos;s board</h2>
           <span className="font-mono text-xs text-muted">
-            {rows.length} {rows.length === 1 ? "project" : "projects"}
+            {items.length} {items.length === 1 ? "project" : "projects"}
           </span>
         </div>
 
         {error && (
-          <p className="rounded-xl border border-amber-300/30 bg-amber-300/5 p-4 text-sm text-amber-200">
-            The board can&apos;t load yet: {error}. Check the Supabase settings in your environment.
+          <p className="rounded-xl border border-amber-300/30 bg-amber-300/5 p-4 text-sm text-amber-200" role="alert">
+            The board can&apos;t load right now. Please refresh in a moment.
           </p>
         )}
 
-        {!error && rows.length === 0 && (
+        {!error && items.length === 0 && (
           <div className="rounded-2xl border border-dashed border-line p-10 text-center text-muted">
-            The board is dark. Be the first scout tonight.
+            The board is dark. Be the first scout tonight, or{" "}
+            <Link href="/demo" className="text-signal hover:underline">
+              see how a night plays out
+            </Link>
+            .
           </div>
         )}
 
         <ol className="flex flex-col gap-3">
-          {rows.map((p, i) => (
-            <li key={p.id} className="rounded-2xl border border-line bg-panel p-4 sm:p-5">
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <div className="flex items-baseline gap-3">
-                    <span className="font-mono text-sm text-muted">{String(i + 1).padStart(2, "0")}</span>
-                    <Link href={`/project/${p.id}`} className="truncate text-lg font-semibold hover:text-signal">
-                      {p.title}
-                    </Link>
-                    <a
-                      href={p.url}
-                      target="_blank"
-                      rel="noopener noreferrer nofollow"
-                      className="shrink-0 text-sm text-muted hover:text-signal"
-                      aria-label={`Open ${p.title}`}
-                    >
-                      ↗
-                    </a>
-                  </div>
-                  <p className="mt-2 text-sm leading-relaxed text-muted">{p.summary}</p>
-                  <div className="mt-3 flex flex-wrap items-center gap-2">
-                    {decisionOf(p) && <DecisionBadge decision={decisionOf(p)!} />}
-                    {p.tags.map((t) => (
-                      <span key={t} className="rounded-full bg-white/5 px-2.5 py-0.5 font-mono text-xs text-muted">
-                        {t}
-                      </span>
-                    ))}
-                    <Link href={`/scout/${p.scout_wallet}`} className="font-mono text-xs text-muted/70 hover:text-ink">
-                      scouted by {shortAddress(p.scout_wallet)}
-                    </Link>
-                  </div>
-                </div>
-                <FlareButton night={night} url={p.url} count={p.flares[0]?.count ?? 0} />
-              </div>
-            </li>
+          {items.map((item, i) => (
+            <BoardCard
+              key={item.id}
+              item={item}
+              rank={i + 1}
+              action={
+                <FlareButton night={night} url={item.url} count={item.flareCount} builtWith={item.built_with ?? "other"} />
+              }
+            />
           ))}
         </ol>
       </section>

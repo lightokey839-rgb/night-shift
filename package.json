@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test:smoke": "node --env-file=.env scripts/smoke.mjs",
+    "seed:demo": "node --env-file=.env scripts/seed-demo.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.4.0",

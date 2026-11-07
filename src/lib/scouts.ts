@@ -42,6 +42,7 @@ export async function loadScoutRecord(wallet: string): Promise<ScoutRecord> {
     .from("flares")
     .select("id, night, created_at, projects(id, title, url, scout_wallet, claims(founder_wallet, verified, decision))")
     .eq("wallet", wallet)
+    .eq("is_demo", false)
     .order("created_at", { ascending: false })
     .limit(300);
   if (error) throw new Error(error.message);
@@ -54,7 +55,8 @@ export async function loadScoutRecord(wallet: string): Promise<ScoutRecord> {
     const { data: boards } = await supabase
       .from("projects")
       .select("id, night, created_at, flares(count)")
-      .in("night", lockedNights);
+      .in("night", lockedNights)
+      .eq("is_demo", false);
     const byNight = new Map<string, { id: string; created_at: string; flares: number }[]>();
     for (const p of (boards ?? []) as { id: string; night: string; created_at: string; flares: { count: number }[] }[]) {
       const list = byNight.get(p.night) ?? [];

@@ -3,8 +3,9 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useAccount, useSignMessage } from "wagmi";
-import { claimMessage, DECISIONS, type ClaimAction, type Decision } from "@/lib/claims";
+import { claimFields, DECISIONS, type ClaimAction, type Decision } from "@/lib/claims";
 import { shortAddress } from "@/lib/format";
+import { newEnvelope, signedMessage } from "@/lib/signing";
 
 type Props = {
   projectId: string;
@@ -30,11 +31,14 @@ export function ClaimPanel({ projectId, claim }: Props) {
     setPending(true);
     setStatus(null);
     try {
-      const signature = await signMessageAsync({ message: claimMessage(action, projectId, address) });
+      const envelope = newEnvelope();
+      const signature = await signMessageAsync({
+        message: signedMessage(action, claimFields(projectId), address, window.location.host, envelope),
+      });
       const res = await fetch("/api/claim", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ step, projectId, address, signature, decision }),
+        body: JSON.stringify({ step, projectId, address, signature, decision, envelope }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {

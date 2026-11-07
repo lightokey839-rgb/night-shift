@@ -45,28 +45,13 @@ export function formatNight(night: string): string {
   });
 }
 
-// The exact text a scout signs to flare a project. The server rebuilds it from
-// the request and verifies the signature, so both sides must match.
-export function flareMessage(url: string, night: string, wallet: string): string {
+// The action-specific lines of a signed flare (see signing.ts for the rest).
+// The server rebuilds them from the request, so both sides must match.
+export function flareFields(url: string, night: string, note: string, builtWith: string): [string, string][] {
   return [
-    "Night Shift · flare",
-    `Project: ${url}`,
-    `Night: ${night}`,
-    `Wallet: ${wallet.toLowerCase()}`,
-  ].join("\n");
-}
-
-// Canonical form used to spot the same project submitted twice in one night.
-export function normalizeUrl(input: string): { url: string; key: string } | null {
-  let parsed: URL;
-  try {
-    parsed = new URL(input.trim());
-  } catch {
-    return null;
-  }
-  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return null;
-  parsed.hash = "";
-  const url = parsed.toString();
-  const key = `${parsed.hostname.replace(/^www\./, "")}${parsed.pathname.replace(/\/$/, "")}`.toLowerCase();
-  return { url, key };
+    ["Project", url],
+    ["Night", night],
+    ["Built with", builtWith],
+    ["Note", note],
+  ];
 }

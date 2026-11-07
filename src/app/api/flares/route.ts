@@ -14,7 +14,8 @@ export async function GET(req: Request) {
     .from("flares")
     .select("id", { count: "exact", head: true })
     .eq("wallet", wallet.toLowerCase())
-    .eq("night", night);
+    .eq("night", night)
+    .eq("is_demo", false);
   if (error) return NextResponse.json({ error: "Database unavailable" }, { status: 500 });
 
   return NextResponse.json({ night, used: count ?? 0, total: FLARES_PER_NIGHT });
