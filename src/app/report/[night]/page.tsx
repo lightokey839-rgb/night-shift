@@ -112,7 +112,12 @@ export default async function ReportPage({ params }: Props) {
                       <p className="mt-2 text-sm leading-relaxed text-muted">{e.summary}</p>
                       <div className="mt-3 flex flex-wrap items-center gap-2">
                         {decisions.get(e.id) && <DecisionBadge decision={decisions.get(e.id)!} />}
-                        <span className="font-mono text-xs text-muted/70">scouted by {shortAddress(e.scout_wallet)}</span>
+                        <Link
+                          href={`/scout/${e.scout_wallet}`}
+                          className="font-mono text-xs text-muted/70 hover:text-ink"
+                        >
+                          scouted by {shortAddress(e.scout_wallet)}
+                        </Link>
                       </div>
                     </div>
                     <span className="flex shrink-0 items-center gap-2 rounded-full border border-line px-3 py-1.5 font-mono text-sm text-signal">

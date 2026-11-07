@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useAccount } from "wagmi";
 import { FLARE_LIT_EVENT } from "./useFlare";
@@ -32,9 +33,10 @@ export function FlaresLeft() {
   const left = Math.max(0, state.total - state.used);
 
   return (
-    <span
-      className="flex items-center gap-2 rounded-full border border-line px-3 py-2 font-mono text-sm"
-      title={`${left} of ${state.total} flares left tonight`}
+    <Link
+      href={`/scout/${address!.toLowerCase()}`}
+      className="flex items-center gap-2 rounded-full border border-line px-3 py-2 font-mono text-sm hover:border-signal"
+      title={`${left} of ${state.total} flares left tonight. Open your scout record.`}
     >
       <span aria-hidden className="tracking-widest">
         {Array.from({ length: state.total }, (_, i) => (
@@ -47,7 +49,7 @@ export function FlaresLeft() {
         {left}
         <span className="hidden sm:inline"> left</span>
       </span>
-      <span className="sr-only">flares left tonight</span>
-    </span>
+      <span className="sr-only">flares left tonight, open your scout record</span>
+    </Link>
   );
 }

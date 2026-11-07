@@ -158,9 +158,9 @@ export default async function Home() {
                         {t}
                       </span>
                     ))}
-                    <span className="font-mono text-xs text-muted/70">
+                    <Link href={`/scout/${p.scout_wallet}`} className="font-mono text-xs text-muted/70 hover:text-ink">
                       scouted by {shortAddress(p.scout_wallet)}
-                    </span>
+                    </Link>
                   </div>
                 </div>
                 <FlareButton night={night} url={p.url} count={p.flares[0]?.count ?? 0} />
