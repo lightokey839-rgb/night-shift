@@ -138,6 +138,40 @@ export function Skyline({ lit, glow, label }: { lit: number; glow: number; label
   );
 }
 
+// The same city as a standalone SVG string, for generated images (share
+// cards, the cover). Same layout, inline colours, a soft halo on lit windows.
+export function skylineSvg(lit: number, glow: number): string {
+  const g = Math.min(1, Math.max(0, glow));
+  const shown = Math.min(lit, CITY.windows.length);
+  const tower = CITY.buildings.find((b) => b.tower)!;
+  const parts = [
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${WIDTH} ${HEIGHT}" width="${WIDTH}" height="${HEIGHT}">`,
+    `<defs><linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#070b14"/><stop offset="0.6" stop-color="#0d1526"/><stop offset="1" stop-color="#14213a"/></linearGradient>`,
+    `<linearGradient id="d" x1="0" y1="0" x2="0" y2="1"><stop offset="0.35" stop-color="#f59e0b" stop-opacity="0"/><stop offset="0.8" stop-color="#f97316" stop-opacity="0.35"/><stop offset="1" stop-color="#fbbf24" stop-opacity="0.6"/></linearGradient></defs>`,
+    `<rect width="${WIDTH}" height="${HEIGHT}" fill="url(#s)"/>`,
+    `<rect width="${WIDTH}" height="${HEIGHT}" fill="url(#d)" opacity="${g}"/>`,
+    ...CITY.stars.map((s) => `<circle cx="${s.x.toFixed(1)}" cy="${s.y.toFixed(1)}" r="${s.r}" fill="#e6ecf5" opacity="${(0.8 * (1 - g)).toFixed(2)}"/>`),
+    ...CITY.buildings.map((b) => `<rect x="${b.x}" y="${GROUND - b.h}" width="${b.w}" height="${b.h + (HEIGHT - GROUND)}" fill="#0a101c"/>`),
+    `<rect x="${tower.x + tower.w / 2 - 1}" y="${GROUND - tower.h - 18}" width="2" height="18" fill="#0a101c"/>`,
+    // The >_ sign drawn as shapes: image renderers may have no font for SVG text.
+    (() => {
+      const cx = tower.x + tower.w / 2;
+      const base = GROUND - tower.h - 5;
+      return (
+        `<path d="M${cx - 9} ${base - 10} L${cx - 3} ${base - 5} L${cx - 9} ${base}" fill="none" stroke="#3ef08a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>` +
+        `<rect x="${cx - 1}" y="${base - 1}" width="9" height="2.2" rx="1" fill="#3ef08a"/>`
+      );
+    })(),
+    ...CITY.windows.map((w, i) =>
+      i < shown
+        ? `<rect x="${w.x - 1.5}" y="${w.y - 1.5}" width="${WIN + 3}" height="${WIN + 3}" rx="2" fill="#3ef08a" opacity="0.25"/><rect x="${w.x}" y="${w.y}" width="${WIN}" height="${WIN}" rx="0.8" fill="#3ef08a"/>`
+        : `<rect x="${w.x}" y="${w.y}" width="${WIN}" height="${WIN}" rx="0.8" fill="#1a2436"/>`,
+    ),
+    `</svg>`,
+  ];
+  return parts.join("");
+}
+
 // 0 for most of the night, rising to 1 over the last few hours before dawn.
 export function dawnGlow(msToDawn: number, hours = 5): number {
   return 1 - Math.min(1, Math.max(0, msToDawn / (hours * 3_600_000)));
