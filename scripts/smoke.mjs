@@ -109,6 +109,11 @@ try {
   check("scout can use flares 2 and 3", f2.status === 200 && f3.status === 200, `${f2.status}, ${f3.status}`);
   check("the 4th flare of the night is refused", f4.status === 429, `${f4.status}`);
 
+  if (process.env.GROQ_API_KEY || process.env.ANTHROPIC_API_KEY) {
+    const { data: analysis } = await supabase.from("project_analysis").select("status, readiness, strengths").eq("project_id", projectId).maybeSingle();
+    check("AI analyst analysed the new app", analysis?.status === "ready", `${analysis?.status ?? "none"}, readiness ${analysis?.readiness ?? "-"}`);
+  }
+
   const board = await (await fetch(BASE)).text();
   check("board shows the project and its note", board.includes("Scouts finding apps overnight, signed by wallet."));
 
@@ -160,6 +165,12 @@ try {
     check("Run dawn now finishes in under 10s", dawn.ok && ms < 10_000, `${ms} ms`);
     const demoReport = await (await fetch(`${BASE}${dawnBody?.report}`)).text();
     check("demo report shows the guest's note and a Demo badge", demoReport.includes("Guest flare from the smoke test") && demoReport.includes("Demo"));
+    if (process.env.GROQ_API_KEY || process.env.ANTHROPIC_API_KEY) {
+      const closed = dawnBody?.report?.split("/").pop();
+      const { data: stored } = await supabase.from("reports").select("ranking").eq("night", closed).maybeSingle();
+      check("AI wrote the demo Morning Report", Boolean(stored), stored ? `"${stored.ranking.headline}"` : "template used");
+      if (closed) await supabase.from("reports").delete().eq("night", closed);
+    }
     const homeAfter = await (await fetch(BASE)).text();
     check("demo activity never appears on the real board", !homeAfter.includes("Smoke demo app"));
   }

@@ -160,7 +160,7 @@ Before deploying, `npm run build` runs the type check and lint.
 | `SUPABASE_URL` | yes | Project URL. A pasted `/rest/v1/` suffix is stripped |
 | `SUPABASE_SERVICE_ROLE_KEY` | yes | Server only. Bypasses RLS, so keep it secret |
 | `GROQ_API_KEY` | no* | Free-tier AI for the analyst and the Morning Report. Used first when set |
-| `GROQ_MODEL` | no | Groq model id, default `llama-3.3-70b-versatile` |
+| `GROQ_MODEL` | no | Groq model id, default `openai/gpt-oss-20b` |
 | `ANTHROPIC_API_KEY` | no* | Claude Haiku instead of Groq. *With neither key, the analyst shows site checks only and reports use the scouts' notes |
 | `BASE_RPC_URL` | no | Base RPC for signature checks. Defaults to the public endpoint |
 | `NEXT_PUBLIC_DAWN_HOUR_UTC` | no | Hour the board locks, default `6`. Keep the cron in `vercel.json` in step |

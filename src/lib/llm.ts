@@ -10,7 +10,7 @@ import { z } from "zod";
 // Never throws; returns null on any failure or timeout.
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
-const GROQ_DEFAULT_MODEL = "llama-3.3-70b-versatile";
+const GROQ_DEFAULT_MODEL = "openai/gpt-oss-20b";
 
 export function aiProvider(): "groq" | "anthropic" | null {
   if (process.env.GROQ_API_KEY) return "groq";
@@ -50,7 +50,8 @@ async function groqJson<T extends z.ZodType>(opts: {
     body: JSON.stringify({
       model: process.env.GROQ_MODEL || GROQ_DEFAULT_MODEL,
       temperature: 0.3,
-      max_tokens: 1200,
+      // Room for reasoning models (gpt-oss) to think before the JSON.
+      max_tokens: 4000,
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: `${opts.system}\n\nRespond with a single JSON object only, in this shape:\n${opts.shape}` },
