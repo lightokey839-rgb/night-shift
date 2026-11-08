@@ -1,9 +1,8 @@
 import "server-only";
-import Anthropic from "@anthropic-ai/sdk";
-import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
 import { refreshAnalysis } from "./analyst";
 import { DEMO_POOL } from "./demo";
+import { aiProvider, generateJson } from "./llm";
 import { currentNight } from "./night";
 import { db, type Project } from "./supabase";
 
@@ -33,6 +32,8 @@ const Writeup = z.object({
     .array(z.object({ id: z.string(), why: z.string().describe("One sentence on why scouts backed it") }))
     .describe("One entry for each of the top projects, in the order given"),
 });
+
+const WRITEUP_SHAPE = `{"headline": string (under 70 characters), "intro": string (2-3 sentences), "picks": [{"id": string (copy the project id exactly), "why": string (one sentence)}]}`;
 
 const SYSTEM = `You write the Morning Report for Night Shift, a board where scouts spend 3 flares a night on promising vibecoded apps, each with a short note on why. At dawn the board locks.
 Given the locked board (ranked by flares) with the scouts' notes, write a headline, a short intro, and one sentence per top project on why the scouts backed it, drawing on their notes.
@@ -120,38 +121,25 @@ async function writeup(ranked: Ranked[], timeoutMs: number) {
     whys: new Map<string, string>(top.flatMap((e) => (e.notes[0] ? [[e.id, `“${e.notes[0]}”`] as [string, string]] : []))),
     ai: false,
   };
-  if (!process.env.ANTHROPIC_API_KEY) return template;
+  if (!aiProvider()) return template;
 
-  try {
-    const client = new Anthropic({ timeout: timeoutMs, maxRetries: 0 });
-    const response = await client.messages.parse({
-      model: "claude-haiku-5-5",
-      max_tokens: 16000,
-      system: SYSTEM,
-      messages: [
-        {
-          role: "user",
-          content: `Projects on the board: ${ranked.length}. Total flares: ${total}.\n\nTop projects:\n${JSON.stringify(
-            top.map((e) => ({ id: e.id, title: e.title, summary: e.summary, flares: e.flares, scout_notes: e.notes.slice(0, 5) })),
-            null,
-            2,
-          )}`,
-        },
-      ],
-      output_config: { effort: "low", format: zodOutputFormat(Writeup) },
-    });
-    if (response.stop_reason === "refusal" || !response.parsed_output) return template;
-    const out = response.parsed_output;
-    return {
-      headline: out.headline,
-      intro: out.intro,
-      whys: new Map(out.picks.map((p) => [p.id, p.why])),
-      ai: true,
-    };
-  } catch (e) {
-    console.error("morning report writeup failed, using template", e);
-    return template;
-  }
+  const out = await generateJson({
+    system: SYSTEM,
+    user: `Projects on the board: ${ranked.length}. Total flares: ${total}.\n\nTop projects:\n${JSON.stringify(
+      top.map((e) => ({ id: e.id, title: e.title, summary: e.summary, flares: e.flares, scout_notes: e.notes.slice(0, 5) })),
+      null,
+      2,
+    )}`,
+    schema: Writeup,
+    shape: WRITEUP_SHAPE,
+    timeoutMs,
+  });
+  if (!out) return template;
+  // Keep only picks for real top projects; fill gaps with the scouts' own words.
+  const ids = new Set(top.map((e) => e.id));
+  const whys = new Map(template.whys);
+  for (const p of out.picks) if (ids.has(p.id) && p.why.trim()) whys.set(p.id, p.why.trim());
+  return { headline: out.headline.slice(0, 120), intro: out.intro, whys, ai: true };
 }
 
 // The newest real night that has projects and has locked.

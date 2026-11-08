@@ -28,7 +28,7 @@ and a short list of next moves, including a path to raise on Vibestarter.
   big platforms, and fetches the page (https only, 5 s, 1 MB, private networks blocked on
   every redirect).
 - **Overnight analyst.** Cheap site checks (loads, HTTPS, viewport, title, OG image, lang,
-  alt text) plus one Claude Haiku call return a summary, up to 3 strengths and risks, and a
+  alt text) plus one small-model call (Groq's free tier, or Claude Haiku) return a summary, up to 3 strengths and risks, and a
   launch-readiness score (0-100), cached per project. It runs on submission and again at
   dawn; on failure the UI says "analysis pending".
 - **Flare.** Back projects on tonight's board with a signed note. 3 flares per wallet per
@@ -68,7 +68,7 @@ Next.js 15 App Router on Vercel
    │    POST /api/demo/dawn           "Run dawn now" (30 s cooldown)
    │    POST /api/demo/analyze        owner: run the analyst on demo apps (CRON_SECRET)
    ├─ viem publicClient on Base       verifyMessage (EOA + ERC-1271/6492 smart wallets)
-   ├─ @anthropic-ai/sdk               claude-haiku-5-5, structured output via zod
+   ├─ src/lib/llm.ts                  Groq (GROQ_API_KEY) or Claude Haiku, JSON validated with zod
    └─ Supabase (service role, server only)
         projects · flares · claims · reports · pledges
 ```
@@ -111,7 +111,8 @@ board, report, counter and scout record. Guests are `guest:<id>` and can only fl
 | `src/lib/signing.ts` | Signed-message envelope: domain, nonce, expiry |
 | `src/lib/submissions.ts` | https-only URL normalising, blocklist, built-with, notes |
 | `src/lib/fetchPage.ts` | Public-page fetcher: private IPs blocked per redirect, 5 s, 1 MB, site checks |
-| `src/lib/analyst.ts` | Overnight analyst (Claude Haiku) and its cache |
+| `src/lib/llm.ts` | One JSON call to Groq or Claude, with timeout and validation |
+| `src/lib/analyst.ts` | Overnight analyst and its cache |
 | `src/lib/report.ts` | Ranking, Morning Report write-up and storage, dawn job |
 | `src/lib/demo.ts` | Demo runs, guest identity, "Run dawn now" rotation |
 | `src/lib/scouts.ts` | Scout record and hit rate |
@@ -158,7 +159,9 @@ Before deploying, `npm run build` runs the type check and lint.
 | --- | --- | --- |
 | `SUPABASE_URL` | yes | Project URL. A pasted `/rest/v1/` suffix is stripped |
 | `SUPABASE_SERVICE_ROLE_KEY` | yes | Server only. Bypasses RLS, so keep it secret |
-| `ANTHROPIC_API_KEY` | yes* | Summaries and the Morning Report. *Without it, both fall back to templates |
+| `GROQ_API_KEY` | no* | Free-tier AI for the analyst and the Morning Report. Used first when set |
+| `GROQ_MODEL` | no | Groq model id, default `llama-3.3-70b-versatile` |
+| `ANTHROPIC_API_KEY` | no* | Claude Haiku instead of Groq. *With neither key, the analyst shows site checks only and reports use the scouts' notes |
 | `BASE_RPC_URL` | no | Base RPC for signature checks. Defaults to the public endpoint |
 | `NEXT_PUBLIC_DAWN_HOUR_UTC` | no | Hour the board locks, default `6`. Keep the cron in `vercel.json` in step |
 | `CRON_SECRET` | prod | Vercel sends it as `Authorization: Bearer …` to `/api/dawn`. Without it the route returns 401 |
@@ -211,6 +214,6 @@ Before deploying, `npm run build` runs the type check and lint.
 ## Stack
 
 Next.js 15.5.29 (App Router) · React 19 · Tailwind CSS 4 · Supabase Postgres ·
-wagmi + viem on Base · `@anthropic-ai/sdk` with `claude-haiku-5-5` · zod · Vercel (hosting + cron).
+wagmi + viem on Base · Groq (free tier) or `@anthropic-ai/sdk` with `claude-haiku-5-5` · zod · Vercel (hosting + cron).
 
 Built with Claude Code (Claude Opus 5.5) in the Claude desktop app. See `/about`.

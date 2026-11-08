@@ -14,8 +14,8 @@ const TOOLS = [
     role: "The builder. Run in the Claude desktop app, it planned each feature, wrote the code, ran it locally, tested it and shipped it through GitHub to Vercel.",
   },
   {
-    name: "Claude Haiku 5.5 (in the product)",
-    role: "Writes each project card's two-sentence summary and tags, and the Morning Report's headline and picks. Structured output with zod; the app falls back to templates if it fails.",
+    name: "A small model in the product (Groq free tier, or Claude Haiku)",
+    role: "The overnight analyst (summary, tags, strengths, risks, launch readiness) and the Morning Report's headline and picks. JSON validated with zod; if it fails, the analyst shows site checks only and the report uses the scouts' own notes.",
   },
 ];
 

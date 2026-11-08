@@ -1,4 +1,5 @@
 import type { AnalysisRow } from "@/lib/analyst";
+import { aiProvider } from "@/lib/llm";
 
 const CHECK_LABELS: [keyof AnalysisRow["checks"], string][] = [
   ["loads", "Loads"],
@@ -29,7 +30,7 @@ export function AnalysisPanel({ analysis, compact = false }: { analysis: Analysi
           </p>
         ) : (
           <p className="font-mono text-xs text-muted">
-            {analysis?.status === "failed" ? "site didn't load" : "analysis pending"}
+            {analysis?.status === "failed" ? "site didn't load" : aiProvider() ? "analysis pending" : "site checks only"}
           </p>
         )}
       </div>

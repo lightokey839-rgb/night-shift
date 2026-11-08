@@ -1,8 +1,8 @@
 [
   {
-    "url": "https://example.com/replace-with-a-real-app",
-    "title": "App name",
-    "built_with": "lovable",
-    "note": "One line on why it's worth a look (max 140 chars)."
+    "url": "https://backstop-blue.vercel.app",
+    "title": "Backstop",
+    "built_with": "other",
+    "note": "On-chain asset health: checks live supply against attested backing, coverage and registry/mint matches. Built with ChatGPT and Claude."
   }
 ]

@@ -1,14 +1,12 @@
 import "server-only";
-import Anthropic from "@anthropic-ai/sdk";
-import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
 import { fetchPage, type PageInfo, type SiteChecks } from "./fetchPage";
+import { generateJson } from "./llm";
 import { db } from "./supabase";
 
-// The overnight analyst: cheap site checks plus one small-model call, cached
-// in project_analysis. Runs when a project is scouted and again at dawn.
-
-const client = new Anthropic({ timeout: 15_000, maxRetries: 1 });
+// The overnight analyst: cheap site checks plus one small-model call (Groq or
+// Claude, see llm.ts), cached in project_analysis. Runs when a project is
+// scouted and again at dawn.
 
 const Analysis = z.object({
   title: z.string().describe("The product's name, short"),
@@ -16,8 +14,10 @@ const Analysis = z.object({
   tags: z.array(z.string()).describe("Exactly three short lowercase tags"),
   strengths: z.array(z.string()).describe("Up to three concrete strengths, one short sentence each"),
   risks: z.array(z.string()).describe("Up to three concrete risks or gaps, one short sentence each"),
-  launch_readiness: z.number().int().describe("0-100: how ready this looks for real users today"),
+  launch_readiness: z.number().describe("0-100: how ready this looks for real users today"),
 });
+
+const SHAPE = `{"title": string, "summary": string (max 2 sentences), "tags": [3 short lowercase strings], "strengths": [up to 3 strings], "risks": [up to 3 strings], "launch_readiness": integer 0-100}`;
 
 const SYSTEM = `You are the overnight analyst for Night Shift, a board where scouts surface promising vibecoded apps.
 Given a project's web page text and automated site checks, return its name, a summary of at most two sentences, three short lowercase tags, up to three strengths, up to three risks, and a launch readiness score from 0 to 100.
@@ -44,23 +44,16 @@ export async function analyzePage(url: string, page: PageInfo): Promise<AnalystR
     tags: [],
     analysis: { status: "pending", checks: page.checks, summary: null, strengths: [], risks: [], readiness: null },
   };
-  if (!process.env.ANTHROPIC_API_KEY) return fallback;
+  const out = await generateJson({
+    system: SYSTEM,
+    user: `URL: ${url}\nTitle: ${page.title}\nDescription: ${page.description}\n\nSite checks:\n${JSON.stringify(page.checks, null, 2)}\n\n<page_text>\n${page.text}\n</page_text>`,
+    schema: Analysis,
+    shape: SHAPE,
+    timeoutMs: 15_000,
+  });
+  if (!out) return fallback;
 
   try {
-    const response = await client.messages.parse({
-      model: "claude-haiku-5-5",
-      max_tokens: 16000,
-      system: SYSTEM,
-      messages: [
-        {
-          role: "user",
-          content: `URL: ${url}\nTitle: ${page.title}\nDescription: ${page.description}\n\nSite checks:\n${JSON.stringify(page.checks, null, 2)}\n\n<page_text>\n${page.text}\n</page_text>`,
-        },
-      ],
-      output_config: { effort: "low", format: zodOutputFormat(Analysis) },
-    });
-    if (response.stop_reason === "refusal" || !response.parsed_output) return fallback;
-    const out = response.parsed_output;
     const summary = out.summary.trim();
     return {
       title: out.title.slice(0, 80),
