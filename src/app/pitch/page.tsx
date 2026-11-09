@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Card, DocSection, OwnerTodo } from "@/components/docs/DocSection";
+import { Card, DocSection } from "@/components/docs/DocSection";
 import { SiteHeader } from "@/components/SiteHeader";
 import { db } from "@/lib/supabase";
 
@@ -15,8 +15,12 @@ export const dynamic = "force-dynamic";
 async function loadActivity() {
   try {
     const supabase = db();
+    // Real activity only: demo and test rows are flagged is_demo and never counted.
     const count = async (table: "projects" | "flares") => {
-      const { count, error } = await supabase.from(table).select("id", { count: "exact", head: true });
+      const { count, error } = await supabase
+        .from(table)
+        .select("id", { count: "exact", head: true })
+        .eq("is_demo", false);
       if (error) throw new Error(error.message);
       return count ?? 0;
     };
@@ -69,27 +73,34 @@ const MONEY = [
   },
 ];
 
+const SHIPPED = [
+  "Signed flares with notes, 3 per wallet per night, enforced by the database",
+  "Dawn lock, Morning Report and share images",
+  "Founder claims and decisions; scout records with verifiable signatures",
+  "A no-wallet demo edition with “Run dawn now”",
+  "The AI analyst: strengths, risks and launch readiness",
+];
+
 const PLAN = [
   {
     when: "Days 1-7",
     items: [
-      "Ship the demo edition (guest flares, “Run dawn now”) so anyone can try the full loop in a minute",
-      "Add nonce, expiry and domain to signed messages",
       "Fix whatever judges and the first scouts hit",
+      "Invite Vibeathon builders to claim their projects and scout each other",
     ],
   },
   {
     when: "Days 8-14",
     items: [
-      "Scout notes, a “built with” field and share images, so picks travel on X",
-      "Invite builders from the Vibeathon to claim their projects",
+      "Tell founders when they are scouted or make the Morning Report",
+      "A weekly digest of each week's top picks",
     ],
   },
   {
     when: "Days 15-21",
     items: [
-      "The AI analyst on each project: strengths, risks and launch readiness",
-      "Tell founders when they are scouted or make the Morning Report",
+      "Scout reputation as a ranking tiebreaker, from earlier nights' hits",
+      "The board as a tower: each project a window that lights with flares",
     ],
   },
   {
@@ -153,7 +164,20 @@ export default async function PitchPage() {
       </DocSection>
 
       <DocSection label="activity" title="On the board so far">
-        {activity ? (
+        {activity && activity[0].value === 0 ? (
+          <p className="text-sm">
+            Night Shift launched during build week, and the first real nights start now. Nothing has been typed in
+            or seeded to make it look busy.{" "}
+            <Link href="/" className="text-signal hover:underline">
+              Be one of the first scouts
+            </Link>
+            , or{" "}
+            <Link href="/demo" className="text-signal hover:underline">
+              try a full night in the demo
+            </Link>
+            .
+          </p>
+        ) : activity ? (
           <>
             <dl className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               {activity.map((s) => (
@@ -163,7 +187,10 @@ export default async function PitchPage() {
                 </div>
               ))}
             </dl>
-            <p className="text-xs">Read live from the database on every visit. Nothing here is typed in by hand.</p>
+            <p className="text-xs">
+              Read live from the database on every visit. Nothing here is typed in by hand, and demo data is left out.
+              Night Shift launched during build week, so these numbers start small.
+            </p>
           </>
         ) : (
           <p className="text-sm">Live activity isn&apos;t available right now.</p>
@@ -178,8 +205,8 @@ export default async function PitchPage() {
                 <p className="font-semibold text-ink">
                   <span className="font-mono text-signal">0{i + 1}</span> {m.name}
                 </p>
-                <span className="rounded-full border border-amber-300/40 px-2.5 py-0.5 font-mono text-xs text-amber-200">
-                  OWNER TO CONFIRM
+                <span className="rounded-full border border-line px-2.5 py-0.5 font-mono text-xs text-muted">
+                  {i === 0 ? "first to try" : "later"}
                 </span>
               </div>
               <p className="mt-2 text-sm">{m.body}</p>
@@ -187,13 +214,20 @@ export default async function PitchPage() {
           ))}
         </div>
         <p className="text-sm">
-          Neither option exists yet, and no agreement with Vibestarter is in place. Both are ideas for after the build
-          week.
+          Neither option exists yet, and no agreement with Vibestarter is in place. The referral share comes first
+          because it only pays when a founder Night Shift surfaced actually raises, which keeps the incentive honest.
         </p>
-        <OwnerTodo>Confirm, change or replace both options, and say which one you would try first.</OwnerTodo>
       </DocSection>
 
       <DocSection label="next 30 days" title="The 30-day plan">
+        <Card accent>
+          <p className="font-mono text-xs uppercase tracking-widest text-signal">Already shipped in build week</p>
+          <ul className="mt-3 list-disc space-y-1 pl-5 text-sm">
+            {SHIPPED.map((s) => (
+              <li key={s}>{s}</li>
+            ))}
+          </ul>
+        </Card>
         <ol className="grid gap-3 sm:grid-cols-2">
           {PLAN.map((p) => (
             <li key={p.when} className="rounded-2xl border border-line bg-panel/60 p-4">
@@ -206,7 +240,7 @@ export default async function PitchPage() {
             </li>
           ))}
         </ol>
-        <OwnerTodo>Check the order of the plan against the time you actually have after the Vibeathon.</OwnerTodo>
+        <p className="text-sm">A plan, not a promise: the order will follow what the first scouts and founders need.</p>
       </DocSection>
 
       <div className="mt-12 flex flex-wrap gap-3">

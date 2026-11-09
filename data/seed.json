@@ -4,5 +4,11 @@
     "title": "Backstop",
     "built_with": "other",
     "note": "On-chain asset health: checks live supply against attested backing, coverage and registry/mint matches. Built with ChatGPT and Claude."
+  },
+  {
+    "url": "https://pulse-light-af8c.vercel.app",
+    "title": "Pulse",
+    "built_with": "codex",
+    "note": "Provable verdicts for Solana memecoins: reads the chain, quotes real sells, and anchors each verdict on Solana."
   }
 ]
