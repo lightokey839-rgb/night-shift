@@ -60,7 +60,18 @@ function layout() {
 
 const CITY = layout();
 
-export function Skyline({ lit, glow, label }: { lit: number; glow: number; label: string }) {
+export function Skyline({
+  lit,
+  glow,
+  label,
+  animateDawn = false,
+}: {
+  lit: number;
+  glow: number;
+  label: string;
+  // Fade the dawn sky in as the page opens (the Morning Report).
+  animateDawn?: boolean;
+}) {
   const g = Math.min(1, Math.max(0, glow));
   const shown = Math.min(lit, CITY.windows.length);
   const tower = CITY.buildings.find((b) => b.tower)!;
@@ -88,7 +99,7 @@ export function Skyline({ lit, glow, label }: { lit: number; glow: number; label
       </defs>
 
       <rect width={WIDTH} height={HEIGHT} fill="url(#sky)" />
-      <rect width={WIDTH} height={HEIGHT} fill="url(#dawn)" opacity={g} />
+      <rect width={WIDTH} height={HEIGHT} fill="url(#dawn)" opacity={g} className={animateDawn ? "dawn-rise" : undefined} />
 
       <g fill="#e6ecf5" opacity={0.8 * (1 - g)}>
         {CITY.stars.map((s, i) => (
@@ -129,7 +140,12 @@ export function Skyline({ lit, glow, label }: { lit: number; glow: number; label
               fill={on ? "#3ef08a" : "#1a2436"}
               filter={on ? "url(#glow)" : undefined}
               className={on ? "skyline-lit" : undefined}
-              style={on ? { animationDelay: `${(i % 7) * 0.7}s` } : undefined}
+              // Switch on one by one, in lighting order, then flicker out of step.
+              style={
+                on
+                  ? { animationDelay: `${Math.min(i * 0.18, 4)}s, ${Math.min(i * 0.18, 4) + 0.7 + (i % 7) * 0.7}s` }
+                  : undefined
+              }
             />
           );
         })}

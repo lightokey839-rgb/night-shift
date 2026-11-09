@@ -15,7 +15,10 @@ export function BoardCard({ item, rank, action }: { item: BoardItem; rank: numbe
   const builtWith = item.built_with && item.built_with in BUILT_WITH ? BUILT_WITH[item.built_with as BuiltWith] : null;
 
   return (
-    <li className="rounded-2xl border border-line bg-panel p-4 sm:p-5">
+    <li
+      className="lift animate-rise rounded-2xl border border-line bg-panel p-4 sm:p-5"
+      style={{ animationDelay: `${Math.min(rank, 8) * 70}ms` }}
+    >
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <div className="flex items-baseline gap-3">

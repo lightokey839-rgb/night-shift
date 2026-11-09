@@ -31,19 +31,126 @@ html {
   outline-offset: 2px;
 }
 
-/* Lit skyline windows flicker gently, like screens still on. */
+/* ---- Motion. Everything below switches off with prefers-reduced-motion. ---- */
+
+/* Lit skyline windows switch on one by one, then flicker gently like screens still on. */
+@keyframes window-on {
+  from { fill: #1a2436; }
+  to { fill: #3ef08a; }
+}
 @keyframes skyline-flicker {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.7; }
 }
-
 .skyline-lit {
-  animation: skyline-flicker 4s ease-in-out infinite;
+  animation:
+    window-on 0.7s ease-out backwards,
+    skyline-flicker 4s ease-in-out infinite;
+}
+
+/* The Morning Report's sky brightens into dawn as the page opens. */
+@keyframes dawn-rise {
+  from { opacity: 0; }
+}
+.dawn-rise {
+  animation: dawn-rise 2.4s ease-out 0.3s backwards;
+}
+
+/* Light rain over the skyline. */
+@keyframes rain-fall {
+  to { background-position: -40px 220px, -80px 300px; }
+}
+.rain {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  opacity: 0.35;
+  background-image:
+    repeating-linear-gradient(105deg, transparent 0 22px, rgba(170, 195, 230, 0.35) 22px 23px, transparent 23px 60px),
+    repeating-linear-gradient(105deg, transparent 0 41px, rgba(170, 195, 230, 0.2) 41px 42px, transparent 42px 90px);
+  background-size: 100% 220px, 100% 300px;
+  mask-image: linear-gradient(to bottom, black 0%, black 70%, transparent 100%);
+  animation: rain-fall 1.1s linear infinite;
+}
+
+/* Pages and cards rise in. */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(10px); }
+}
+.animate-rise {
+  animation: rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+}
+
+/* Cards lift on hover; buttons give way when pressed. */
+.lift {
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.lift:hover {
+  transform: translateY(-2px);
+  border-color: rgba(62, 240, 138, 0.35);
+  box-shadow: 0 10px 30px -12px rgba(62, 240, 138, 0.25);
+}
+button:not(:disabled):active,
+a.press:active {
+  transform: scale(0.97);
+}
+button,
+a.press {
+  transition: transform 0.12s ease, filter 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+}
+
+/* The terminal cursor in the logo. */
+@keyframes blink {
+  50% { opacity: 0; }
+}
+.cursor-blink {
+  animation: blink 1.1s steps(1) infinite;
+}
+
+/* Full-screen sunrise while "Run dawn now" publishes the report. */
+@keyframes sunrise {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+@keyframes sunrise-fade {
+  from { opacity: 0; }
+}
+.sunrise {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(7, 11, 20, 0.7);
+  animation: sunrise-fade 0.4s ease-out backwards;
+}
+.sunrise::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(120% 70% at 50% 100%, rgba(251, 191, 36, 0.75), rgba(249, 115, 22, 0.35) 40%, transparent 75%);
+  animation: sunrise 3.5s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .skyline-lit {
+  .skyline-lit,
+  .dawn-rise,
+  .rain,
+  .animate-rise,
+  .cursor-blink,
+  .sunrise,
+  .sunrise::before {
     animation: none;
+  }
+  .rain {
+    display: none;
+  }
+  .lift,
+  .lift:hover,
+  button:not(:disabled):active,
+  a.press:active {
+    transform: none;
   }
 }
 

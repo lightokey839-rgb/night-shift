@@ -125,7 +125,12 @@ export default async function ReportPage({ params }: Props) {
             </div>
 
             <figure className="mt-8 overflow-hidden rounded-2xl border border-line">
-              <Skyline lit={totalFlares} glow={1} label="The city at dawn, with one lit window for every flare that night" />
+              <Skyline
+                lit={totalFlares}
+                glow={1}
+                animateDawn
+                label="The city at dawn, with one lit window for every flare that night"
+              />
             </figure>
 
             <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 font-mono text-xs uppercase tracking-widest text-muted">
@@ -195,7 +200,10 @@ function TopEntry({
   const notes = extras.notes.get(e.id) ?? [];
   const decision = extras.decisions.get(e.id);
   return (
-    <li className={`rounded-2xl border bg-panel p-4 sm:p-5 ${rank === 1 ? "border-signal/50" : "border-line"}`}>
+    <li
+      className={`lift animate-rise rounded-2xl border bg-panel p-4 sm:p-5 ${rank === 1 ? "border-signal/50" : "border-line"}`}
+      style={{ animationDelay: `${600 + rank * 150}ms` }}
+    >
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <div className="flex items-baseline gap-3">

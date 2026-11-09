@@ -48,7 +48,10 @@ export default async function DemoPage() {
       </section>
 
       <figure className="mb-6 overflow-hidden rounded-2xl border border-line">
-        <Skyline lit={totalFlares} glow={0.15} label={`Demo skyline with ${totalFlares} lit windows`} />
+        <div className="relative">
+          <Skyline lit={totalFlares} glow={0.15} label={`Demo skyline with ${totalFlares} lit windows`} />
+          <div className="rain" aria-hidden />
+        </div>
         <figcaption className="flex items-center justify-between gap-3 border-t border-line bg-panel px-4 py-2 font-mono text-xs text-muted">
           <span className="text-signal">✦ {totalFlares} lit</span>
           <span>

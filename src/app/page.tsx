@@ -69,11 +69,14 @@ export default async function Home() {
       </section>
 
       <figure className="relative mb-8 overflow-hidden rounded-2xl border border-line">
-        <Skyline
-          lit={totalFlares}
-          glow={dawnGlow(dawn.getTime() - Date.now())}
-          label={`City skyline at night with ${totalFlares} lit ${totalFlares === 1 ? "window" : "windows"}, one per flare tonight`}
-        />
+        <div className="relative">
+          <Skyline
+            lit={totalFlares}
+            glow={dawnGlow(dawn.getTime() - Date.now())}
+            label={`City skyline at night with ${totalFlares} lit ${totalFlares === 1 ? "window" : "windows"}, one per flare tonight`}
+          />
+          <div className="rain" aria-hidden />
+        </div>
         <div className="absolute left-4 top-4 hidden items-center gap-3 rounded-full border border-line bg-night/80 px-4 py-2 text-sm backdrop-blur sm:inline-flex">
           <span className="h-2 w-2 animate-pulse rounded-full bg-signal" aria-hidden />
           <span className="text-muted">Dawn in</span>

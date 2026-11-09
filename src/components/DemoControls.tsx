@@ -103,6 +103,15 @@ export function RunDawnButton({ canRun }: { canRun: boolean }) {
 
   return (
     <div>
+      {pending && (
+        <div className="sunrise" role="status" aria-live="polite">
+          <div className="relative text-center">
+            <p className="font-mono text-xs uppercase tracking-widest text-amber-200">Dawn</p>
+            <p className="mt-2 text-2xl font-semibold text-ink sm:text-3xl">The board is locking…</p>
+            <p className="mt-2 text-sm text-muted">Writing the Morning Report</p>
+          </div>
+        </div>
+      )}
       <button
         onClick={run}
         disabled={pending || !canRun}
